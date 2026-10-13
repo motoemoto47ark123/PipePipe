@@ -29,6 +29,8 @@ final class ItagInfo implements Serializable {
     @Nullable
     private String obfuscatedSignature;
     @Nullable
+    private String signatureParameter;
+    @Nullable
     private String audioTrackId;
     @Nullable
     private String audioTrackName;
@@ -73,6 +75,25 @@ final class ItagInfo implements Serializable {
      */
     void setObfuscatedSignature(@Nullable final String obfuscatedSignature) {
         this.obfuscatedSignature = obfuscatedSignature;
+    }
+
+    /**
+     * Sets the name of the query parameter the deobfuscated signature has to be sent in.
+     *
+     * @param signatureParameter the signature query parameter name
+     */
+    void setSignatureParameter(@Nullable final String signatureParameter) {
+        this.signatureParameter = signatureParameter;
+    }
+
+    /**
+     * Gets the name of the query parameter the deobfuscated signature has to be sent in.
+     *
+     * @return the signature query parameter name, or null if not set
+     */
+    @Nullable
+    String getSignatureParameter() {
+        return signatureParameter;
     }
 
     /**

@@ -29,4 +29,10 @@ tasks.named('test') {
     enabled = true
     group = 'verification'
     useJUnitPlatform()
+    systemProperty 'youtube.realNetwork', System.getProperty('youtube.realNetwork', 'false')
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
 }

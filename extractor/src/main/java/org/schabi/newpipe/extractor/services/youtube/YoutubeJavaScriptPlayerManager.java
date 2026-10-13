@@ -45,7 +45,7 @@ public final class YoutubeJavaScriptPlayerManager {
     private static final long PLAYER_METADATA_TTL_MILLIS = 24L * 60L * 60L * 1000L;
 
     @Nullable
-    private static PlayerMetadata playerMetadata;
+    private static volatile PlayerMetadata playerMetadata;
 
     private YoutubeJavaScriptPlayerManager() {
     }
@@ -219,16 +219,23 @@ public final class YoutubeJavaScriptPlayerManager {
         final long startedAtNanos = System.nanoTime();
         final YoutubeJavaScriptDecoder decoder = YoutubeApiDecoder.getLocalDecoder();
         if (decoder != null) {
-            final YoutubeJavaScriptDecoder.PlayerData data = decoder.getPlayerData(videoId);
-            playerMetadata = new PlayerMetadata(data.getPlayerId(), data.getSignatureTimestamp(),
-                    System.currentTimeMillis() + PLAYER_METADATA_TTL_MILLIS);
-            logPerformance(videoId, "ejs.playerMetadata.local", startedAtNanos);
-            return playerMetadata;
+            try {
+                final YoutubeJavaScriptDecoder.PlayerData data = decoder.getPlayerData(videoId);
+                final PlayerMetadata localMetadata = new PlayerMetadata(data.getPlayerId(),
+                        data.getSignatureTimestamp(),
+                        System.currentTimeMillis() + PLAYER_METADATA_TTL_MILLIS);
+                playerMetadata = localMetadata;
+                logPerformance(videoId, "ejs.playerMetadata.local", startedAtNanos);
+                return localMetadata;
+            } catch (final ParsingException ignored) {
+                // The decoder API also provides player metadata.
+            }
         }
 
-        playerMetadata = fetchLatestPlayerMetadata();
+        final PlayerMetadata remoteMetadata = fetchLatestPlayerMetadata();
+        playerMetadata = remoteMetadata;
         logPerformance(videoId, "ejs.playerMetadata.remoteFallback", startedAtNanos);
-        return playerMetadata;
+        return remoteMetadata;
     }
 
     private static void logPerformance(@Nonnull final String videoId,

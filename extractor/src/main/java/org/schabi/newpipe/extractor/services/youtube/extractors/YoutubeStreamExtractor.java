@@ -806,6 +806,8 @@ public class YoutubeStreamExtractor extends StreamExtractor {
             } catch (final Exception e) {
                 throw new ParsingException("Could not deobfuscate manifest URL n parameter", e);
             }
+            // YouTube answers requests to the manifest with HTTP 403 without it.
+            throw new ParsingException("Could not deobfuscate manifest URL n parameter");
         }
         return manifestUrl;
     }
@@ -825,11 +827,18 @@ public class YoutubeStreamExtractor extends StreamExtractor {
                 .orElse(EMPTY_STRING);
     }
 
+    private static final java.util.regex.Pattern DIRECT_URL_N_PATTERN =
+            java.util.regex.Pattern.compile("([&?])n=([^&]+)");
+
     // Cache for batch-processed streams
     private List<AudioStream> cachedAudioStreams;
     private List<VideoStream> cachedVideoStreams;
     private List<VideoStream> cachedVideoOnlyStreams;
     private boolean streamsCached = false;
+    // Why streams were left out because their URL could not be deobfuscated, reported when no
+    // stream is left.
+    @Nullable
+    private Exception streamDecodeError;
 
     /**
      * Pre-fetch and batch-process all streams in a single API call.
@@ -847,6 +856,7 @@ public class YoutubeStreamExtractor extends StreamExtractor {
         cachedAudioStreams = new ArrayList<>();
         cachedVideoStreams = new ArrayList<>();
         cachedVideoOnlyStreams = new ArrayList<>();
+        streamDecodeError = null;
         Exception extractionError = primaryPlayerError;
         try {
             final String selectedClient = NewPipe.getYoutubePlayerClient();
@@ -877,6 +887,9 @@ public class YoutubeStreamExtractor extends StreamExtractor {
             }
         }
         if (hasNoExtractedStreams()) {
+            if (extractionError == null) {
+                extractionError = streamDecodeError;
+            }
             if (extractionError == null) {
                 throw new ParsingException("Could not get streams");
             }
@@ -1153,27 +1166,26 @@ public class YoutubeStreamExtractor extends StreamExtractor {
         if (urlParts.url == null || urlParts.url.isEmpty()) {
             return null;
         }
-        String url = urlParts.url;
-        if (urlParts.signature != null) {
-            url += (url.contains("?") ? "&" : "?")
-                    + (urlParts.signatureParameter == null
-                    ? "signature" : urlParts.signatureParameter)
-                    + "=SIGNATURE_PLACEHOLDER";
-        }
-        url += "&" + CPN + "=" + cpn;
+        final String url = urlParts.url + (urlParts.url.contains("?") ? "&" : "?")
+                + CPN + "=" + cpn;
         fillSabrItagItem(item, format);
         final ItagInfo info = new ItagInfo(url, item);
         info.setIsUrl(!"FORMAT_STREAM_TYPE_OTF".equalsIgnoreCase(
                 format.getString("type", EMPTY_STRING)));
         if (urlParts.signature != null) {
             info.setObfuscatedSignature(urlParts.signature);
+            info.setSignatureParameter(urlParts.signatureParameter);
         }
         return info;
     }
 
+    /**
+     * Deobfuscate the signature and throttling parameter of direct stream URLs in a single batch
+     * and remove the streams whose URL could not be fully deobfuscated, as YouTube answers
+     * requests to them with HTTP 403.
+     */
     private void deobfuscateDirectUrls(@Nonnull final String videoId,
-                                       @Nonnull final List<ItagInfo> itags)
-            throws ParsingException {
+                                       @Nonnull final List<ItagInfo> itags) {
         final LinkedHashSet<String> signatures = new LinkedHashSet<>();
         final LinkedHashSet<String> throttling = new LinkedHashSet<>();
         for (final ItagInfo info : itags) {
@@ -1189,22 +1201,84 @@ public class YoutubeStreamExtractor extends StreamExtractor {
         if (signatures.isEmpty() && throttling.isEmpty()) {
             return;
         }
-        final YoutubeApiDecoder.BatchDecodeResult result =
-                YoutubeJavaScriptPlayerManager.deobfuscateBatch(videoId,
-                        new ArrayList<>(signatures), new ArrayList<>(throttling));
-        for (final ItagInfo info : itags) {
-            String url = info.getContent();
-            final String signature = info.getObfuscatedSignature();
-            if (!isNullOrEmpty(signature) && result.getSignatures().get(signature) != null) {
-                url = url.replace("SIGNATURE_PLACEHOLDER",
-                        result.getSignatures().get(signature));
+        YoutubeApiDecoder.BatchDecodeResult result;
+        ParsingException decodeError = null;
+        try {
+            result = YoutubeJavaScriptPlayerManager.deobfuscateBatch(videoId,
+                    new ArrayList<>(signatures), new ArrayList<>(throttling));
+        } catch (final ParsingException e) {
+            decodeError = e;
+            result = new YoutubeApiDecoder.BatchDecodeResult(
+                    Collections.emptyMap(), Collections.emptyMap());
+        }
+        int dropped = 0;
+        final Iterator<ItagInfo> iterator = itags.iterator();
+        while (iterator.hasNext()) {
+            final ItagInfo info = iterator.next();
+            final String url = resolveDirectUrl(info.getContent(),
+                    info.getObfuscatedSignature(), info.getSignatureParameter(), result);
+            if (url == null) {
+                iterator.remove();
+                dropped++;
+            } else {
+                info.setContent(url);
             }
-            final String n = YoutubeJavaScriptPlayerManager
-                    .getThrottlingParameterFromStreamingUrl(url);
-            if (!isNullOrEmpty(n) && result.getNParameters().get(n) != null) {
-                url = url.replace(n, result.getNParameters().get(n));
+        }
+        if (dropped > 0) {
+            final String message = "Dropped " + dropped + " streams of " + videoId
+                    + " whose signature or throttling parameter could not be deobfuscated";
+            System.out.println("YT_DECODE " + message);
+            streamDecodeError = decodeError == null
+                    ? new ParsingException(message) : new ParsingException(message, decodeError);
+        }
+    }
+
+    /**
+     * Build the playable URL of a direct stream from its deobfuscated parameters.
+     *
+     * @param url                 the stream URL, without its signature
+     * @param obfuscatedSignature the obfuscated signature of the stream, if it has one
+     * @param signatureParameter  the query parameter name of the signature
+     * @param decoded             the deobfuscated signatures and throttling parameters
+     * @return the playable URL, or {@code null} if the signature or the throttling parameter of
+     * the stream could not be deobfuscated
+     */
+    @Nullable
+    static String resolveDirectUrl(@Nonnull final String url,
+                                   @Nullable final String obfuscatedSignature,
+                                   @Nullable final String signatureParameter,
+                                   @Nonnull final YoutubeApiDecoder.BatchDecodeResult decoded) {
+        String resolvedUrl = url;
+        if (!isNullOrEmpty(obfuscatedSignature)) {
+            final String signature = decoded.getSignatures().get(obfuscatedSignature);
+            if (isNullOrEmpty(signature)) {
+                return null;
             }
-            info.setContent(url);
+            resolvedUrl += (resolvedUrl.contains("?") ? "&" : "?")
+                    + encodeUrlComponentUtf8(isNullOrEmpty(signatureParameter)
+                    ? "signature" : signatureParameter)
+                    + '=' + encodeUrlComponentUtf8(signature);
+        }
+        final java.util.regex.Matcher matcher = DIRECT_URL_N_PATTERN.matcher(resolvedUrl);
+        if (!matcher.find()) {
+            return resolvedUrl;
+        }
+        final String decodedN = decoded.getNParameters().get(matcher.group(2));
+        if (isNullOrEmpty(decodedN)) {
+            return null;
+        }
+        return resolvedUrl.substring(0, matcher.start(2))
+                + encodeUrlComponentUtf8(decodedN)
+                + resolvedUrl.substring(matcher.end(2));
+    }
+
+    @Nonnull
+    private static String encodeUrlComponentUtf8(@Nonnull final String value) {
+        try {
+            // URLEncoder.encode(String, Charset) is not available before Android 13.
+            return URLEncoder.encode(value, StandardCharsets.UTF_8.name());
+        } catch (final UnsupportedEncodingException e) {
+            throw new IllegalStateException("UTF-8 is not supported", e);
         }
     }
 
@@ -1229,6 +1303,7 @@ public class YoutubeStreamExtractor extends StreamExtractor {
                     playerResponsePoToken);
         } catch (final Exception e) {
             addError(e);
+            streamDecodeError = e;
             return null;
         }
     }
@@ -1337,6 +1412,12 @@ public class YoutubeStreamExtractor extends StreamExtractor {
                     new ArrayList<>(signatures), new ArrayList<>(nParameters));
             serverAbrStreamingUrl = resolveNParameter(unresolvedServerAbrStreamingUrl,
                     decoded);
+            if (serverAbrStreamingUrl == null
+                    && !isNullOrEmpty(unresolvedServerAbrStreamingUrl)) {
+                // YouTube answers every SABR request with HTTP 403 without it.
+                throw new ParsingException(
+                        "Could not deobfuscate the n parameter of the SABR streaming URL");
+            }
         }
         final List<YoutubeSabrInfo.Format> formats = parseSabrFormats(adaptiveFormats, decoded);
         return new YoutubeSabrInfo(videoId, cpn, clientVersion, visitorData,
@@ -1459,6 +1540,10 @@ public class YoutubeStreamExtractor extends StreamExtractor {
                 extractNParameter(url));
     }
 
+    /**
+     * @return the URL with its n parameter deobfuscated, or {@code null} if it has one which
+     * could not be deobfuscated
+     */
     @Nullable
     private static String resolveNParameter(
             @Nullable final String url,
@@ -1472,7 +1557,7 @@ public class YoutubeStreamExtractor extends StreamExtractor {
         }
         final String decryptedN = decoded.getNParameters().get(encryptedN);
         if (decryptedN == null) {
-            return url;
+            return null;
         }
         final java.util.regex.Matcher queryMatcher = java.util.regex.Pattern
                 .compile("([?&])n=([^&]+)").matcher(url);
