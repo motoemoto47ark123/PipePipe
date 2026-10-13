@@ -104,8 +104,8 @@ class NewVersionWorker(
             }
         }
 
-        // Make a network request to get latest NewPipe data.
-        val response = DownloaderImpl.getInstance().get(NEWPIPE_API_URL)
+        // Make a network request to get the latest releases.
+        val response = DownloaderImpl.getInstance().get(RELEASES_API_URL)
         handleResponse(response)
     }
 
@@ -131,28 +131,47 @@ class NewVersionWorker(
             var selectedRelease: JsonObject? = null
 
             // 选择最新符合要求的版本（稳定版或包括预发布）
+            var selectedVersionName: String? = null
             for (i in 0 until githubReleases.size) {
                 val release = githubReleases.getObject(i)
+                if (release.getBoolean("draft")) continue
                 if (!includePreRelease && release.getBoolean("prerelease")) continue
-                if (selectedRelease == null || isNewerRelease(release, selectedRelease)) {
+                // Releases whose name or tag is not a version are not app releases.
+                val versionName = getReleaseVersionName(release) ?: continue
+                if (selectedVersionName == null ||
+                    compareVersions(parseVersion(versionName), parseVersion(selectedVersionName)) > 0
+                ) {
                     selectedRelease = release
+                    selectedVersionName = versionName
                 }
             }
 
-            selectedRelease?.let { release ->
-                val versionName = release.getString("name").removePrefix("v")
-                val apkUrl = findCompatibleApkUrl(release, Build.SUPPORTED_ABIS)
-                compareAppVersionAndShowNotification(versionName, apkUrl, inputData.getBoolean(IS_MANUAL, false))
+            if (selectedRelease != null && selectedVersionName != null) {
+                // Open the release page when no APK for this device is attached.
+                val apkUrl = findCompatibleApkUrl(selectedRelease, Build.SUPPORTED_ABIS)
+                    ?: selectedRelease.getString("html_url")
+                compareAppVersionAndShowNotification(
+                    selectedVersionName, apkUrl, inputData.getBoolean(IS_MANUAL, false)
+                )
+            } else if (inputData.getBoolean(IS_MANUAL, false)) {
+                compareAppVersionAndShowNotification(
+                    BuildConfig.VERSION_NAME, null, true
+                )
             }
         } catch (e: JsonParserException) {
             if (DEBUG) Log.w(TAG, "JSON解析错误", e)
         }
     }
 
-    private fun isNewerRelease(newRelease: JsonObject, currentRelease: JsonObject): Boolean {
-        val newVersion = parseVersion(newRelease.getString("name").removePrefix("v"))
-        val currentVersion = parseVersion(currentRelease.getString("name").removePrefix("v"))
-        return compareVersions(newVersion, currentVersion) > 0
+    /**
+     * @return the version of a release from its name, or from its tag when the name is not a
+     * version, or null if neither is one
+     */
+    private fun getReleaseVersionName(release: JsonObject): String? {
+        return listOf(release.getString("name"), release.getString("tag_name"))
+            .filterNotNull()
+            .map { it.trim().removePrefix("v") }
+            .firstOrNull { parseVersionOrNull(it) != null }
     }
 
     private fun findCompatibleApkUrl(release: JsonObject, abis: Array<String>): String? {
@@ -193,7 +212,10 @@ class NewVersionWorker(
         private val DEBUG = MainActivity.DEBUG
         private val TAG = NewVersionWorker::class.java.simpleName
         private val RELEASE_APK_ABIS = listOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
-        private const val NEWPIPE_API_URL = "https://api.github.com/repositories/490984887/releases"
+        // Releases of this fork. Publishing a release with the APKs attached notifies every
+        // installation that has update checks enabled.
+        private const val RELEASES_API_URL =
+            "https://api.github.com/repos/motoemoto47ark123/PipePipe/releases"
         private const val IS_MANUAL = "isManual"
 
         private fun getReleaseApkAbi(name: String): String? {
@@ -201,7 +223,7 @@ class NewVersionWorker(
         }
         /**
          * Start a new worker which checks if all conditions for performing a version check are met,
-         * fetches the API endpoint [.NEWPIPE_API_URL] containing info about the latest NewPipe
+         * fetches the API endpoint [.RELEASES_API_URL] containing info about the latest
          * version and displays a notification about an available update if one is available.
          * <br></br>
          * Following conditions need to be met, before data is requested from the server:
@@ -228,6 +250,14 @@ data class Version(
     val patch: Int,
     val betaVersion: Int? // null表示正式版，数字表示beta版本号
 )
+
+private fun parseVersionOrNull(versionStr: String): Version? {
+    return try {
+        parseVersion(versionStr)
+    } catch (e: RuntimeException) {
+        null
+    }
+}
 
 private fun parseVersion(versionStr: String): Version {
     val normalized = versionStr.removePrefix("v")

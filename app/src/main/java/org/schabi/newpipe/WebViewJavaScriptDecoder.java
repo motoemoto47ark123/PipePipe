@@ -227,9 +227,9 @@ public final class WebViewJavaScriptDecoder implements YoutubeJavaScriptDecoder 
                 + "window.__ejsSolvers);window.__ejsPlayerId=i.playerId;window.__ejsPlayer=null;"
                 + "delete r.preprocessed_player}else{r={type:'result',responses:i.requests.map("
                 + "function(q){var f=window.__ejsSolvers[q.type];if(!f)return{type:'error',"
-                + "error:'Failed to extract '+q.type+' function'};try{var d={};q.challenges."
-                + "forEach(function(v){d[v]=f(v)});return{type:'result',data:d}}catch(e){return{"
-                + "type:'error',error:e instanceof Error?e.message+'\\n'+e.stack:String(e)}}})}}"
+                + "error:'Failed to extract '+q.type+' function'};var d={};q.challenges."
+                + "forEach(function(v){try{var o=f(v);if(typeof o==='string')d[v]=o}catch(e){}});"
+                + "return{type:'result',data:d}})}}"
                 + "return JSON.stringify({"
                 + "ok:true,cold:cold,elapsedMs:Math.round(performance.now()-s),result:r})}catch(e){"
                 + "return JSON.stringify({ok:false,error:String(e),stack:e&&e.stack})}})("
@@ -332,7 +332,10 @@ public final class WebViewJavaScriptDecoder implements YoutubeJavaScriptDecoder 
         for (int i = 0; i < responses.length(); i++) {
             final JSONObject response = responses.getJSONObject(i);
             if (!"result".equals(response.optString("type"))) {
-                throw new ParsingException("Decoder response returned " + response);
+                // Leave the values of this type out, so that they are decoded by the API
+                // instead of failing the values of the other type.
+                Log.w(TAG, "Decoder response returned " + response);
+                continue;
             }
             final Map<String, String> destination = hasN && (i == 0 || !hasSig)
                     ? throttlingParameters : signatures;
