@@ -1,0 +1,108 @@
+name: Release
+
+# Pushing a tag such as v5.5.0-beta2 or v5.5.1 builds signed APKs and publishes them as a GitHub
+# release. The app checks these releases for updates: tags containing "-beta" are published as
+# pre-releases, which only reach users who enabled "Show pre-releases" in the update settings.
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to release, for example v5.5.0-beta2'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+          submodules: recursive
+
+      - uses: gradle/actions/wrapper-validation@v4
+
+      - name: Check that the tag matches the app version
+        run: |
+          version=$(sed -n 's/^def appVersionName = "\(.*\)"$/\1/p' PipePipeClient/app/build.gradle)
+          version_code=$(sed -n 's/^def baseVersionCode = \([0-9]*\)$/\1/p' PipePipeClient/app/build.gradle)
+          if [ "v$version" != "$TAG" ]; then
+            echo "::error::Tag $TAG does not match appVersionName $version in PipePipeClient/app/build.gradle"
+            exit 1
+          fi
+          echo "VERSION_CODE=$version_code" >> "$GITHUB_ENV"
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: 25
+          distribution: "temurin"
+          cache: 'gradle'
+
+      - name: Decode the signing key
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$RELEASE_KEYSTORE_BASE64" ]; then
+            echo "::error::The RELEASE_KEYSTORE_BASE64 secret is not set"
+            exit 1
+          fi
+          echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "KEY_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Build release APKs
+        env:
+          KEY_STORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          cd PipePipeClient
+          ./gradlew assembleRelease --stacktrace -DskipFormatKtlint
+
+      # Updates only install over an existing installation when every release is signed with
+      # the same key, so never publish an unsigned or differently signed APK.
+      - name: Verify the APK signatures
+        env:
+          EXPECTED_CERT_SHA256: ${{ secrets.RELEASE_CERT_SHA256 }}
+        run: |
+          apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n 1)
+          shopt -s nullglob
+          apks=(PipePipeClient/app/build/outputs/apk/release/*.apk)
+          if [ ${#apks[@]} -eq 0 ]; then
+            echo "::error::No release APKs were built"
+            exit 1
+          fi
+          for apk in "${apks[@]}"; do
+            cert=$("$apksigner" verify --print-certs "$apk" \
+              | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+            echo "$apk: $cert"
+            if [ -n "$EXPECTED_CERT_SHA256" ] && [ "$cert" != "$EXPECTED_CERT_SHA256" ]; then
+              echo "::error::$apk is not signed with the release key"
+              exit 1
+            fi
+          done
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          notes="fastlane/metadata/android/en-US/changelogs/$VERSION_CODE.txt"
+          notes_args=(--generate-notes)
+          if [ -f "$notes" ]; then
+            notes_args=(--notes-file "$notes")
+          fi
+          prerelease_args=()
+          if [[ "$TAG" == *-beta* ]]; then
+            prerelease_args=(--prerelease)
+          fi
+          gh release create "$TAG" PipePipeClient/app/build/outputs/apk/release/*.apk \
+            --verify-tag --title "$TAG" "${notes_args[@]}" "${prerelease_args[@]}"
