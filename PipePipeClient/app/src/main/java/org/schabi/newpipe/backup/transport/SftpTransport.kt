@@ -79,7 +79,8 @@ class SftpTransport(private val settings: ServerSettings) : BackupTransport {
             close()
             val message = e.message ?: e.toString()
             if (message.contains("Auth fail", ignoreCase = true) ||
-                message.contains("Auth cancel", ignoreCase = true)
+                message.contains("Auth cancel", ignoreCase = true) ||
+                message.contains("Too many authentication failures", ignoreCase = true)
             ) {
                 throw AuthenticationException("The server rejected the login", e)
             }
@@ -152,11 +153,17 @@ class SftpTransport(private val settings: ServerSettings) : BackupTransport {
         }
     }
 
-    /** Answers password and keyboard-interactive prompts with the configured password. */
+    /**
+     * Answers a keyboard-interactive password prompt once. The password login itself uses the
+     * password given to the session. Answering again after a rejection would only repeat the
+     * same password until the server disconnects.
+     */
     private class PasswordUserInfo(private val password: String) : UserInfo, UIKeyboardInteractive {
+        private var answeredKeyboardInteractive = false
+
         override fun getPassphrase(): String? = null
         override fun getPassword(): String = password
-        override fun promptPassword(message: String?): Boolean = password.isNotEmpty()
+        override fun promptPassword(message: String?): Boolean = false
         override fun promptPassphrase(message: String?): Boolean = false
         override fun promptYesNo(message: String?): Boolean = false
         override fun showMessage(message: String?) {}
@@ -168,9 +175,10 @@ class SftpTransport(private val settings: ServerSettings) : BackupTransport {
             prompt: Array<out String>?,
             echo: BooleanArray?
         ): Array<String>? {
-            if (password.isEmpty() || prompt == null) {
+            if (password.isEmpty() || prompt == null || answeredKeyboardInteractive) {
                 return null
             }
+            answeredKeyboardInteractive = true
             return Array(prompt.size) { password }
         }
     }

@@ -930,7 +930,7 @@
 <string name="sponsor_promote">Become a supporter</string>
 <string name="random_play_order_title">Random Order</string>
 <string name="random_play_order_summary">Automatically shuffle your local playlists when playing in the background</string>
-<string name="update_log">### New Features\n\n- Greatly optimized TV controls\n- Added support for video quality selection in live streams\n- The \"Swipe down to minimize\" gesture is now configurable in Settings\n- Optimized the deletion interaction for content filters\n- Added support for Recommended/Popular live streams (NicoNico)\n- Added support for the Live tab on channels (NicoNico)\n\n### Bug Fixes\n\n- Fixed the \"Start in fullscreen\" setting not working\n- Fixed split-screen mode being unavailable\n- Fixed an issue where subtitles would disappear when entering fullscreen mode\n- Fixed content blocking not applying to public playlists\n- Fixed an issue where live streams continued to fetch data while paused\n- Fixed an issue where terminated videos using the SABR protocol could not be resumed\n- Fixed a crash that could occur when starting playback under specific conditions\n- Fixed an issue where the total playlist duration would increase infinitely in certain scenarios\n- Fixed a crash caused by deleting watch history under specific conditions\n- Fixed the dislike counter not being disabled by default on fresh installations\n- Fixed download failures occurring under specific conditions (Bilibili)\n- Fixed recommended live streams appearing empty (Bilibili)</string>
+<string name="update_log">### New\n\n- Choose where your data is stored: Settings → Backup → Where your data is stored. Keep it in a folder on your phone\'s storage so it survives uninstalling or reinstalling the app\n- Automatic backups to your own server over SFTP, FTPS, FTP or WebDAV: Settings → Backup → Automatic backups to your server\n- Feed filters for paid videos and live streams, next to the filter for watched videos</string>
 <string name="speeding_playback_title">Long-press to speeding the playback</string>
 <string name="view_on_github">View on GitHub</string>
 <string name="donation_dialog_title">Support the Project</string>
@@ -1185,7 +1185,8 @@
 <string name="remote_backup_protocol_title">Protocol</string>
 <string-array name="remote_backup_protocol_names">
 <item>SFTP (SSH)</item>
-<item>FTPS (FTP with TLS)</item>
+<item>FTPS (FTP with explicit TLS)</item>
+<item>FTPS (FTP with implicit TLS, port 990)</item>
 <item>FTP (not encrypted)</item>
 <item>WebDAV (HTTPS)</item>
 <item>WebDAV (HTTP, not encrypted)</item>

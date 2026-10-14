@@ -2,7 +2,6 @@ package org.schabi.newpipe.backup
 
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -179,19 +178,37 @@ class BackupTransportServerTest {
     }
 
     @Test
-    fun ftps() {
-        val settings = settings(Protocol.FTPS, "FTPS_PORT")
-        checkRoundTrip(settings)
+    fun ftpsWithExplicitTls() {
+        checkRoundTrip(settings(Protocol.FTPS, "FTPS_PORT"))
+    }
+
+    @Test
+    fun ftpsWithImplicitTls() {
+        checkRoundTrip(settings(Protocol.FTPS_IMPLICIT, "FTPS_IMPLICIT_PORT"))
     }
 
     @Test
     fun ftpsRefusesUntrustedCertificatesUnlessAllowed() {
-        val settings = settings(Protocol.FTPS, "FTPS_PORT").copy(allowUntrustedCertificates = false)
+        assertCertificateRefused(
+            settings(Protocol.FTPS, "FTPS_PORT").copy(allowUntrustedCertificates = false)
+        )
+        assertCertificateRefused(
+            settings(Protocol.FTPS_IMPLICIT, "FTPS_IMPLICIT_PORT")
+                .copy(allowUntrustedCertificates = false)
+        )
+    }
+
+    /** Connecting must fail because of the self-signed certificate, not for another reason. */
+    private fun assertCertificateRefused(settings: ServerSettings) {
         try {
             BackupTransport.create(settings).use { it.connect() }
             fail("A self-signed certificate was trusted")
         } catch (e: IOException) {
-            assertFalse(e is AuthenticationException)
+            val causes = generateSequence(e as Throwable) { it.cause }.toList()
+            assertTrue(
+                "Not a certificate error: $e",
+                causes.any { it is javax.net.ssl.SSLException }
+            )
         }
     }
 
@@ -209,13 +226,9 @@ class BackupTransportServerTest {
 
     @Test
     fun webDavHttpsRefusesUntrustedCertificatesUnlessAllowed() {
-        val settings = settings(Protocol.WEBDAV_HTTPS, "WEBDAV_HTTPS_PORT")
-            .copy(allowUntrustedCertificates = false)
-        try {
-            BackupTransport.create(settings).use { it.connect() }
-            fail("A self-signed certificate was trusted")
-        } catch (e: IOException) {
-            assertFalse(e is AuthenticationException)
-        }
+        assertCertificateRefused(
+            settings(Protocol.WEBDAV_HTTPS, "WEBDAV_HTTPS_PORT")
+                .copy(allowUntrustedCertificates = false)
+        )
     }
 }

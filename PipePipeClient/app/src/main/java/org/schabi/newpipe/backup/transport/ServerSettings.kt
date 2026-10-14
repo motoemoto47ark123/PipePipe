@@ -8,11 +8,14 @@ enum class Protocol(val defaultPort: Int) {
 
     /** FTP with explicit TLS (AUTH TLS) */
     FTPS(21),
+
+    /** FTP with implicit TLS, where the connection starts with TLS */
+    FTPS_IMPLICIT(990),
     WEBDAV_HTTPS(443),
     WEBDAV_HTTP(80);
 
     val usesTls: Boolean
-        get() = this == FTPS || this == WEBDAV_HTTPS
+        get() = this == FTPS || this == FTPS_IMPLICIT || this == WEBDAV_HTTPS
 
     companion object {
         @JvmStatic

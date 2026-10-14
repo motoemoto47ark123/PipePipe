@@ -1850,6 +1850,7 @@
     <string-array name="remote_backup_protocol_values" translatable="false">
         <item>SFTP</item>
         <item>FTPS</item>
+        <item>FTPS_IMPLICIT</item>
         <item>FTP</item>
         <item>WEBDAV_HTTPS</item>
         <item>WEBDAV_HTTP</item>

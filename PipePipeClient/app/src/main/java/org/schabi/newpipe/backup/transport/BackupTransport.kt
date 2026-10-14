@@ -45,7 +45,7 @@ interface BackupTransport : Closeable {
         @JvmStatic
         fun create(settings: ServerSettings): BackupTransport = when (settings.protocol) {
             Protocol.SFTP -> SftpTransport(settings)
-            Protocol.FTP, Protocol.FTPS -> FtpTransport(settings)
+            Protocol.FTP, Protocol.FTPS, Protocol.FTPS_IMPLICIT -> FtpTransport(settings)
             Protocol.WEBDAV_HTTPS, Protocol.WEBDAV_HTTP -> WebDavTransport(settings)
         }
 

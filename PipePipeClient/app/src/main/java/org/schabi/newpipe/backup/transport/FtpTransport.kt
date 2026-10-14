@@ -12,7 +12,7 @@ import java.io.IOException
 import java.security.GeneralSecurityException
 import javax.net.ssl.HttpsURLConnection
 
-/** Uploads backups over FTP, or FTP with explicit TLS (FTPS). */
+/** Uploads backups over FTP, or FTP with explicit or implicit TLS (FTPS). */
 class FtpTransport(private val settings: ServerSettings) : BackupTransport {
     private var client: FTPClient? = null
 
@@ -51,10 +51,10 @@ class FtpTransport(private val settings: ServerSettings) : BackupTransport {
     }
 
     private fun createClient(): FTPClient {
-        if (settings.protocol != Protocol.FTPS) {
+        if (settings.protocol == Protocol.FTP) {
             return FTPClient()
         }
-        val ftps = FTPSClient(false)
+        val ftps = FTPSClient(settings.protocol == Protocol.FTPS_IMPLICIT)
         if (settings.allowUntrustedCertificates) {
             ftps.trustManager = TrustManagerUtils.getAcceptAllTrustManager()
         } else {
