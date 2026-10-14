@@ -82,9 +82,22 @@ jobs:
             exit 1
           fi
           for apk in "${apks[@]}"; do
-            cert=$("$apksigner" verify --print-certs "$apk" \
-              | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+            if ! output=$("$apksigner" verify --print-certs "$apk" 2>&1); then
+              echo "$output"
+              echo "::error::$apk does not verify"
+              exit 1
+            fi
+            # "Signer #1 certificate SHA-256 digest: ..." or, since build-tools 37,
+            # "V2 Signer: certificate SHA-256 digest: ...".
+            cert=$(printf '%s\n' "$output" \
+              | sed -n -E 's/^.*[Ss]igner.* certificate SHA-256 digest: ([0-9a-f]+)$/\1/p' \
+              | head -n 1)
             echo "$apk: $cert"
+            if [ -z "$cert" ]; then
+              echo "$output"
+              echo "::error::Could not read the signing certificate of $apk"
+              exit 1
+            fi
             if [ -n "$EXPECTED_CERT_SHA256" ] && [ "$cert" != "$EXPECTED_CERT_SHA256" ]; then
               echo "::error::$apk is not signed with the release key"
               exit 1
