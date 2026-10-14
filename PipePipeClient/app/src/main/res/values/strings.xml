@@ -930,7 +930,7 @@
 <string name="sponsor_promote">Become a supporter</string>
 <string name="random_play_order_title">Random Order</string>
 <string name="random_play_order_summary">Automatically shuffle your local playlists when playing in the background</string>
-<string name="update_log">### New Features\n\n- Greatly optimized TV controls\n- Added support for video quality selection in live streams\n- The \"Swipe down to minimize\" gesture is now configurable in Settings\n- Optimized the deletion interaction for content filters\n- Added support for Recommended/Popular live streams (NicoNico)\n- Added support for the Live tab on channels (NicoNico)\n\n### Bug Fixes\n\n- Fixed the \"Start in fullscreen\" setting not working\n- Fixed split-screen mode being unavailable\n- Fixed an issue where subtitles would disappear when entering fullscreen mode\n- Fixed content blocking not applying to public playlists\n- Fixed an issue where live streams continued to fetch data while paused\n- Fixed an issue where terminated videos using the SABR protocol could not be resumed\n- Fixed a crash that could occur when starting playback under specific conditions\n- Fixed an issue where the total playlist duration would increase infinitely in certain scenarios\n- Fixed a crash caused by deleting watch history under specific conditions\n- Fixed the dislike counter not being disabled by default on fresh installations\n- Fixed download failures occurring under specific conditions (Bilibili)\n- Fixed recommended live streams appearing empty (Bilibili)</string>
+<string name="update_log">### New\n\n- Choose where your data is stored: Settings → Backup → Where your data is stored. Keep it in a folder on your phone\'s storage so it survives uninstalling or reinstalling the app\n- Automatic backups to your own server over SFTP, FTPS, FTP or WebDAV: Settings → Backup → Automatic backups to your server\n- Feed filters for paid videos and live streams, next to the filter for watched videos</string>
 <string name="speeding_playback_title">Long-press to speeding the playback</string>
 <string name="view_on_github">View on GitHub</string>
 <string name="donation_dialog_title">Support the Project</string>
@@ -1139,4 +1139,125 @@
 <string name="dearrow_original_fallback_title">Keep the original thumbnail</string>
 <string name="dearrow_original_fallback_summary">When no replacement frame is available, show the uploader\'s thumbnail instead of leaving a placeholder.</string>
 <string name="dearrow_settings_summary">Crowdsourced titles and thumbnails for YouTube videos. Tap to enable and tune.</string>
+<!-- Data location -->
+<string name="database_location_title">Where your data is stored</string>
+<string name="database_location_private_summary">App storage. Deleted if PipePipe is uninstalled.</string>
+<string name="database_location_inaccessible_summary">Can\'t access %1$s. Using app storage until access is granted.</string>
+<string name="database_location_private">App storage (default, deleted when uninstalling)</string>
+<string name="database_location_shared">Phone storage: %1$s (kept when uninstalling)</string>
+<string name="database_location_choose">Choose another folder…</string>
+<string name="database_location_inaccessible_message">PipePipe can\'t access %1$s, where your data is stored, so it uses app storage for now. Your data is still in that folder. Grant storage access to use it again.</string>
+<string name="database_location_grant_access">Grant access</string>
+<string name="database_location_change">Change location</string>
+<string name="database_location_not_writable">PipePipe can\'t write to %1$s.</string>
+<string name="database_location_move_to_private_message">Move your history, subscriptions and playlists back into app storage? They will be deleted if you uninstall PipePipe. PipePipe restarts afterwards.</string>
+<string name="database_location_access_title">Storage access needed</string>
+<string name="database_location_access_message">To keep your data in a folder on your phone\'s storage, PipePipe needs access to all files. Allow it for PipePipe on the next screen.</string>
+<string name="database_location_access_denied">Storage access was not granted</string>
+<string name="database_location_no_picker">No app for choosing folders was found</string>
+<string name="database_location_unsupported_folder">Choose a folder on the phone\'s storage or an SD card</string>
+<string name="database_location_unchanged">Your data is already stored there</string>
+<string name="database_location_move_message">Your history, subscriptions, playlists and other data will be moved to %1$s, where they are kept when PipePipe is uninstalled. PipePipe restarts afterwards.</string>
+<string name="database_location_existing_title">Existing data found</string>
+<string name="database_location_existing_message">%1$s already contains PipePipe data from %2$s (%3$s). Use that data, or replace it with your current data?</string>
+<string name="database_location_use_existing">Use that data</string>
+<string name="database_location_replace_existing">Replace it</string>
+<string name="database_location_replace_confirm">The data in %1$s will be replaced with your current data. This cannot be undone.</string>
+<string name="database_location_newer_version">That data was saved by a newer version of PipePipe. Update PipePipe to use it.</string>
+<string name="database_location_moving">Moving your data…</string>
+<string name="database_location_inaccessible_toast">PipePipe can\'t access your data in %1$s. Open Settings → Backup to fix it.</string>
+<!-- Backups to the user's server -->
+<string name="remote_backup_title">Automatic backups to your server</string>
+<string name="remote_backup_enabled_title">Automatic backups</string>
+<string name="remote_backup_enabled_summary">Upload a backup of your data to your server regularly, in the background and while you use the app</string>
+<string name="remote_backup_status_title">Last backup</string>
+<string name="remote_backup_status_last">Last backup: %1$s (%2$s)</string>
+<string name="remote_backup_status_none">No backup uploaded yet</string>
+<string name="remote_backup_status_failed">Failed at %1$s: %2$s</string>
+<string name="remote_backup_summary_off">Off</string>
+<string name="remote_backup_summary_on">%1$s to %2$s</string>
+<string name="remote_backup_summary_failing">Backups to %1$s are failing: %2$s</string>
+<plurals name="remote_backup_every_hours">
+<item quantity="one">Every hour</item>
+<item quantity="other">Every %d hours</item>
+</plurals>
+<string name="remote_backup_server_category">Server</string>
+<string name="remote_backup_protocol_title">Protocol</string>
+<string-array name="remote_backup_protocol_names">
+<item>SFTP (SSH)</item>
+<item>FTPS (FTP with explicit TLS)</item>
+<item>FTPS (FTP with implicit TLS, port 990)</item>
+<item>FTP (not encrypted)</item>
+<item>WebDAV (HTTPS)</item>
+<item>WebDAV (HTTP, not encrypted)</item>
+</string-array>
+<string name="remote_backup_host_title">Server address</string>
+<string name="remote_backup_host_message">Host name or IP address, for example 192.168.1.5 or example.com. A port and a path can be added, as in example.com:2222/backups.</string>
+<string name="remote_backup_port_title">Port</string>
+<string name="remote_backup_port_message">Leave empty for the default port of the protocol</string>
+<string name="remote_backup_username_title">User name</string>
+<string name="remote_backup_password_title">Password</string>
+<string name="remote_backup_private_key_title">SSH private key</string>
+<string name="remote_backup_private_key_none">None, the password is used</string>
+<string name="remote_backup_private_key_load">Load from a file</string>
+<string name="remote_backup_private_key_paste">Paste the key</string>
+<string name="remote_backup_private_key_remove">Remove the key</string>
+<string name="remote_backup_private_key_invalid">This is not a private key. Use an OpenSSH, PEM or PuTTY private key.</string>
+<string name="remote_backup_key_passphrase_title">Key passphrase</string>
+<string name="remote_backup_server_key_title">Trusted server key</string>
+<string name="remote_backup_server_key_none">Not known yet. The server\'s key is remembered on the first connection.</string>
+<string name="remote_backup_server_key_message">Backups only go to the server with this key:\n\n%1$s\n\nForget it if the server\'s key was changed on purpose. The next connection then trusts the new key.</string>
+<string name="remote_backup_server_key_forget">Forget key</string>
+<string name="remote_backup_allow_untrusted_title">Accept untrusted certificates</string>
+<string name="remote_backup_allow_untrusted_summary">Needed for self-signed certificates, which are common on home servers. Anyone between you and the server could then read your backups and password.</string>
+<string name="remote_backup_folder_title">Folder on the server</string>
+<string name="remote_backup_folder_message">Created if it does not exist. Relative to the folder you log in to, unless it starts with /</string>
+<string name="remote_backup_test_title">Test connection</string>
+<string name="remote_backup_test_summary">Log in and check that backups can be written</string>
+<string name="remote_backup_test_success">Connected to %1$s. Backups can be written to the folder.</string>
+<string name="remote_backup_test_fingerprint">Server key: %1$s</string>
+<string name="remote_backup_schedule_category">Schedule</string>
+<string name="remote_backup_interval_title">Back up every</string>
+<string-array name="remote_backup_interval_names">
+<item>Hour</item>
+<item>3 hours</item>
+<item>6 hours</item>
+<item>12 hours</item>
+<item>Day</item>
+</string-array>
+<string name="remote_backup_wifi_only_title">Only on Wi-Fi</string>
+<string name="remote_backup_wifi_only_summary">Wait for a network without a data limit</string>
+<string name="remote_backup_include_settings_title">Include settings</string>
+<string name="remote_backup_include_settings_summary">Also back up PipePipe\'s settings. The server details are never included.</string>
+<string name="remote_backup_keep_recent_title">Recent backups to keep</string>
+<string name="remote_backup_keep_recent_message">The newest backups are always kept</string>
+<string name="remote_backup_keep_daily_title">Days with a daily backup</string>
+<string name="remote_backup_keep_daily_message">For this many days, the last backup of each day is kept as well, so that a few bad backups never replace every good one</string>
+<string name="remote_backup_actions_category">Backups</string>
+<string name="remote_backup_now_title">Back up now</string>
+<string name="remote_backup_now_summary">Upload a backup right away</string>
+<string name="remote_backup_restore_title">Restore from the server</string>
+<string name="remote_backup_restore_summary">Replace your current data with a backup from the server</string>
+<string name="remote_backup_restore_none">There are no backups in the folder on the server</string>
+<string name="remote_backup_not_set">Not set</string>
+<string name="remote_backup_saved">Saved</string>
+<string name="remote_backup_connecting">Connecting…</string>
+<string name="remote_backup_uploading">Uploading a backup…</string>
+<string name="remote_backup_downloading">Downloading the backup…</string>
+<string name="remote_backup_uploaded">Uploaded %1$s (%2$s)</string>
+<string name="remote_backup_unchanged">Nothing changed since the last backup</string>
+<string name="remote_backup_error_title">Backup error</string>
+<string name="remote_backup_error_no_server">Enter the server address first</string>
+<string name="remote_backup_error_database_unavailable">PipePipe can\'t access the folder with your data, so no backup was made</string>
+<string name="remote_backup_error_login">The server rejected the user name, password or key</string>
+<string name="remote_backup_error_host_key_changed">The server\'s SSH key changed, so nothing was sent. If it was changed on purpose, forget the trusted server key in the backup settings.</string>
+<string name="remote_backup_error_unknown_host">The server address was not found</string>
+<string name="remote_backup_error_unreachable">Could not reach the server: %1$s</string>
+<string name="remote_backup_error_certificate">The secure connection failed: %1$s. For a self-signed certificate, turn on \"Accept untrusted certificates\".</string>
+<string name="remote_backup_failed_notification">Backup to your server failed</string>
+<string name="remote_backup_notification_channel_name">Server backups</string>
+<string name="remote_backup_notification_channel_description">Notifications when a backup to your server fails</string>
+<!-- Feed filters -->
+<string name="feed_toggle_show_paid_items">Show paid videos</string>
+<string name="feed_toggle_show_live_items">Show live streams</string>
 </resources>

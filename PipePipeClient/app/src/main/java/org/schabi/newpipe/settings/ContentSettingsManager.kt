@@ -6,16 +6,52 @@ import org.schabi.newpipe.streams.io.SharpOutputStream
 import org.schabi.newpipe.streams.io.StoredFileHelper
 import org.schabi.newpipe.util.ZipHelper
 import java.io.BufferedOutputStream
+import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+import java.io.OutputStream
 import java.util.zip.ZipOutputStream
 
 class ContentSettingsManager(private val fileLocator: NewPipeFileLocator) {
     companion object {
         const val TAG = "ContentSetManager"
+
+        /**
+         * Writes [db] and, unless [preferences] is null, the settings into [output] as a zip file
+         * in the format that can be imported.
+         *
+         * @param settingsFile a temporary file for the serialized settings
+         */
+        @JvmStatic
+        @Throws(Exception::class)
+        fun writeExport(
+            output: OutputStream,
+            db: File,
+            preferences: SharedPreferences?,
+            settingsFile: File
+        ) {
+            ZipOutputStream(BufferedOutputStream(output)).use { outZip ->
+                ZipHelper.addFileToZip(outZip, db.path, "newpipe.db")
+                if (preferences == null) {
+                    return
+                }
+
+                try {
+                    settingsFile.parentFile?.mkdirs()
+                    ObjectOutputStream(FileOutputStream(settingsFile)).use { settingsOutput ->
+                        settingsOutput.writeObject(preferences.all)
+                        settingsOutput.flush()
+                    }
+                } catch (e: IOException) {
+                    Log.e(TAG, "Unable to exportDatabase", e)
+                }
+
+                ZipHelper.addFileToZip(outZip, settingsFile.path, "newpipe.settings")
+            }
+        }
     }
 
     /**
@@ -25,21 +61,7 @@ class ContentSettingsManager(private val fileLocator: NewPipeFileLocator) {
     @Throws(Exception::class)
     fun exportDatabase(preferences: SharedPreferences, file: StoredFileHelper) {
         file.create()
-        ZipOutputStream(BufferedOutputStream(SharpOutputStream(file.stream)))
-            .use { outZip ->
-                ZipHelper.addFileToZip(outZip, fileLocator.db.path, "newpipe.db")
-
-                try {
-                    ObjectOutputStream(FileOutputStream(fileLocator.settings)).use { output ->
-                        output.writeObject(preferences.all)
-                        output.flush()
-                    }
-                } catch (e: IOException) {
-                    Log.e(TAG, "Unable to exportDatabase", e)
-                }
-
-                ZipHelper.addFileToZip(outZip, fileLocator.settings.path, "newpipe.settings")
-            }
+        writeExport(SharpOutputStream(file.stream), fileLocator.db, preferences, fileLocator.settings)
     }
 
     fun deleteSettingsFile() {
@@ -67,6 +89,23 @@ class ContentSettingsManager(private val fileLocator: NewPipeFileLocator) {
     }
 
     fun extractSettings(file: StoredFileHelper): Boolean {
+        return ZipHelper.extractFileFromZip(file, fileLocator.settings.path, "newpipe.settings")
+    }
+
+    /** Same as [extractDb] for a zip file that is accessible with `java.io`. */
+    fun extractDb(file: File): Boolean {
+        val success = ZipHelper.extractFileFromZip(file, fileLocator.db.path, "newpipe.db")
+        if (success) {
+            fileLocator.dbJournal.delete()
+            fileLocator.dbWal.delete()
+            fileLocator.dbShm.delete()
+        }
+
+        return success
+    }
+
+    /** Same as [extractSettings] for a zip file that is accessible with `java.io`. */
+    fun extractSettings(file: File): Boolean {
         return ZipHelper.extractFileFromZip(file, fileLocator.settings.path, "newpipe.settings")
     }
 

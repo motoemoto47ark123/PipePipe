@@ -28,13 +28,13 @@ import java.util.concurrent.TimeUnit
 class FeedViewModel(
     private val applicationContext: Context,
     groupId: Long = FeedGroupEntity.GROUP_ALL_ID,
-    initialShowPlayedItems: Boolean = true
+    initialFilters: FeedFilters = FeedFilters()
 ) : ViewModel() {
     private var feedDatabaseManager: FeedDatabaseManager = FeedDatabaseManager(applicationContext)
 
-    private val toggleShowPlayedItems = BehaviorProcessor.create<Boolean>()
-    private val toggleShowPlayedItemsFlowable = toggleShowPlayedItems
-        .startWithItem(initialShowPlayedItems)
+    private val filtersProcessor = BehaviorProcessor.create<FeedFilters>()
+    private val filtersFlowable = filtersProcessor
+        .startWithItem(initialFilters)
         .distinctUntilChanged()
 
     private val mutableStateLiveData = MutableLiveData<FeedState>()
@@ -43,11 +43,11 @@ class FeedViewModel(
     private var combineDisposable = Flowable
         .combineLatest(
             FeedEventManager.events(),
-            toggleShowPlayedItemsFlowable,
+            filtersFlowable,
             feedDatabaseManager.notLoadedCount(groupId),
             feedDatabaseManager.oldestSubscriptionUpdate(groupId),
 
-            Function4 { t1: FeedEventManager.Event, t2: Boolean,
+            Function4 { t1: FeedEventManager.Event, t2: FeedFilters,
                 t3: Long, t4: List<OffsetDateTime> ->
                 return@Function4 CombineResultEventHolder(t1, t2, t3, t4.firstOrNull())
             }
@@ -55,10 +55,13 @@ class FeedViewModel(
         .throttleLatest(DEFAULT_THROTTLE_TIMEOUT, TimeUnit.MILLISECONDS)
         .subscribeOn(Schedulers.io())
         .observeOn(Schedulers.io())
-        .map { (event, showPlayedItems, notLoadedCount, oldestUpdate) ->
+        .map { (event, filters, notLoadedCount, oldestUpdate) ->
             val streamItems = if (event is SuccessResultEvent || event is IdleEvent)
                 feedDatabaseManager
-                    .getStreams(groupId, showPlayedItems)
+                    .getStreams(
+                        groupId, filters.showPlayedItems, filters.showPaidItems,
+                        filters.showLiveItems
+                    )
                     .blockingGet(arrayListOf())
             else
                 arrayListOf()
@@ -88,7 +91,7 @@ class FeedViewModel(
 
     private data class CombineResultEventHolder(
         val t1: FeedEventManager.Event,
-        val t2: Boolean,
+        val t2: FeedFilters,
         val t3: Long,
         val t4: OffsetDateTime?
     )
@@ -100,22 +103,50 @@ class FeedViewModel(
         val t4: OffsetDateTime?
     )
 
-    fun togglePlayedItems(showPlayedItems: Boolean) {
-        toggleShowPlayedItems.onNext(showPlayedItems)
+    /** Which kinds of streams the feed shows. */
+    data class FeedFilters(
+        val showPlayedItems: Boolean = true,
+        val showPaidItems: Boolean = true,
+        val showLiveItems: Boolean = true
+    )
+
+    fun setFilters(filters: FeedFilters) {
+        filtersProcessor.onNext(filters)
     }
 
-    fun saveShowPlayedItemsToPreferences(showPlayedItems: Boolean) =
+    fun saveFiltersToPreferences(filters: FeedFilters) =
         PreferenceManager.getDefaultSharedPreferences(applicationContext).edit {
-            this.putBoolean(applicationContext.getString(R.string.feed_show_played_items_key), showPlayedItems)
-            this.apply()
+            putBoolean(
+                applicationContext.getString(R.string.feed_show_played_items_key),
+                filters.showPlayedItems
+            )
+            putBoolean(
+                applicationContext.getString(R.string.feed_show_paid_items_key),
+                filters.showPaidItems
+            )
+            putBoolean(
+                applicationContext.getString(R.string.feed_show_live_items_key),
+                filters.showLiveItems
+            )
         }
 
-    fun getShowPlayedItemsFromPreferences() = getShowPlayedItemsFromPreferences(applicationContext)
+    fun getFiltersFromPreferences() = getFiltersFromPreferences(applicationContext)
 
     companion object {
-        private fun getShowPlayedItemsFromPreferences(context: Context) =
-            PreferenceManager.getDefaultSharedPreferences(context)
-                .getBoolean(context.getString(R.string.feed_show_played_items_key), true)
+        private fun getFiltersFromPreferences(context: Context): FeedFilters {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            return FeedFilters(
+                showPlayedItems = prefs.getBoolean(
+                    context.getString(R.string.feed_show_played_items_key), true
+                ),
+                showPaidItems = prefs.getBoolean(
+                    context.getString(R.string.feed_show_paid_items_key), true
+                ),
+                showLiveItems = prefs.getBoolean(
+                    context.getString(R.string.feed_show_live_items_key), true
+                )
+            )
+        }
     }
 
     class Factory(
@@ -128,7 +159,7 @@ class FeedViewModel(
                 context.applicationContext,
                 groupId,
                 // Read initial value from preferences
-                getShowPlayedItemsFromPreferences(context.applicationContext)
+                getFiltersFromPreferences(context.applicationContext)
             ) as T
         }
     }

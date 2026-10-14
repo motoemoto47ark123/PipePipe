@@ -36,8 +36,8 @@ public class StreamStateEntity {
      * Stream will be considered finished if the playback time left exceeds this threshold
      * (60000ms = 60s).
      * @see #isFinished(long)
-     * @see org.schabi.newpipe.database.feed.dao.FeedDAO#getLiveOrNotPlayedStreams()
-     * @see org.schabi.newpipe.database.feed.dao.FeedDAO#getLiveOrNotPlayedStreamsForGroup(long)
+     * @see org.schabi.newpipe.database.feed.dao.FeedDAO#getLiveOrNotPlayedStreams(boolean, boolean)
+     * @see org.schabi.newpipe.database.feed.dao.FeedDAO#getLiveOrNotPlayedStreamsForGroup(long, boolean, boolean)
      */
     public static final long PLAYBACK_FINISHED_END_MILLISECONDS = 60000;
 
@@ -89,8 +89,8 @@ public class StreamStateEntity {
      * The state will be saved anyway, so that it can be shown under stream info items, but the
      * player will not resume if a state is considered as finished. Finished streams are also the
      * ones that can be filtered out in the feed fragment.
-     * @see org.schabi.newpipe.database.feed.dao.FeedDAO#getLiveOrNotPlayedStreams()
-     * @see org.schabi.newpipe.database.feed.dao.FeedDAO#getLiveOrNotPlayedStreamsForGroup(long)
+     * @see org.schabi.newpipe.database.feed.dao.FeedDAO#getLiveOrNotPlayedStreams(boolean, boolean)
+     * @see org.schabi.newpipe.database.feed.dao.FeedDAO#getLiveOrNotPlayedStreamsForGroup(long, boolean, boolean)
      * @param durationInSeconds the duration of the stream connected with this state, in seconds
      * @return whether the stream is finished or not
      */

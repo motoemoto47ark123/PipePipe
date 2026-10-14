@@ -19,6 +19,22 @@
         app:showAsAction="collapseActionView" />
 
     <item
+        android:id="@+id/menu_item_feed_toggle_paid_items"
+        android:checkable="true"
+        android:checked="true"
+        android:icon="@drawable/ic_visibility_on"
+        android:title="@string/feed_toggle_show_paid_items"
+        app:showAsAction="collapseActionView" />
+
+    <item
+        android:id="@+id/menu_item_feed_toggle_live_items"
+        android:checkable="true"
+        android:checked="true"
+        android:icon="@drawable/ic_visibility_on"
+        android:title="@string/feed_toggle_show_live_items"
+        app:showAsAction="collapseActionView" />
+
+    <item
             android:id="@+id/menu_item_feed_channel_list"
             android:icon="@drawable/ic_channels"
             android:title="@string/channels"

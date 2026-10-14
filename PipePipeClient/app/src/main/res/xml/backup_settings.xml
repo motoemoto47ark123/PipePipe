@@ -2,6 +2,20 @@
                   xmlns:app="http://schemas.android.com/apk/res-auto"
                   android:key="general_preferences"
                   android:title="@string/settings_category_backup_title">
+
+    <Preference
+            android:key="@string/database_location_key"
+            android:title="@string/database_location_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+    <PreferenceScreen
+            android:fragment="org.schabi.newpipe.settings.RemoteBackupSettingsFragment"
+            android:key="@string/remote_backup_screen_key"
+            android:title="@string/remote_backup_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
     <Preference
             android:key="@string/import_data"
             android:summary="@string/import_data_summary"
