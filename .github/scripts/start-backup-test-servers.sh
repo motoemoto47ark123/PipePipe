@@ -11,7 +11,18 @@ echo "::add-mask::$password"
 mkdir -p "$dir"
 
 sudo apt-get update -qq
-sudo apt-get install -y -qq openssh-server rclone netcat-openbsd >/dev/null
+sudo apt-get install -y -qq openssh-server netcat-openbsd unzip >/dev/null
+
+# The rclone package of Ubuntu cannot serve FTP, so use an official release
+rclone_version=v1.75.1
+curl -fsSL -o "$dir/rclone.zip" \
+  "https://downloads.rclone.org/$rclone_version/rclone-$rclone_version-linux-amd64.zip"
+curl -fsSL -o "$dir/rclone.sums" "https://downloads.rclone.org/$rclone_version/SHA256SUMS"
+(cd "$dir" && grep " rclone-$rclone_version-linux-amd64.zip\$" rclone.sums \
+  | sed "s/ rclone-$rclone_version-linux-amd64.zip\$/ rclone.zip/" | sha256sum -c -)
+unzip -q -j "$dir/rclone.zip" "*/rclone" -d "$dir/bin"
+rclone="$dir/bin/rclone"
+"$rclone" version
 
 # SFTP: OpenSSH on port 2222 with password and key logins
 sudo useradd --create-home --shell /bin/bash "$user"
@@ -35,14 +46,14 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj "/CN=localhost" \
   -keyout "$dir/key.pem" -out "$dir/cert.pem" 2>/dev/null
 mkdir -p "$dir/ftp" "$dir/ftps" "$dir/dav" "$dir/davs"
 auth=(--user "$user" --pass "$password")
-nohup rclone serve ftp "$dir/ftp" --addr 127.0.0.1:2121 "${auth[@]}" \
+nohup "$rclone" serve ftp "$dir/ftp" --addr 127.0.0.1:2121 "${auth[@]}" \
   --passive-port 30000-30049 --public-ip 127.0.0.1 >"$dir/ftp.log" 2>&1 &
-nohup rclone serve ftp "$dir/ftps" --addr 127.0.0.1:2990 "${auth[@]}" \
+nohup "$rclone" serve ftp "$dir/ftps" --addr 127.0.0.1:2990 "${auth[@]}" \
   --passive-port 30050-30099 --public-ip 127.0.0.1 \
   --cert "$dir/cert.pem" --key "$dir/key.pem" >"$dir/ftps.log" 2>&1 &
-nohup rclone serve webdav "$dir/dav" --addr 127.0.0.1:8080 "${auth[@]}" \
+nohup "$rclone" serve webdav "$dir/dav" --addr 127.0.0.1:8080 "${auth[@]}" \
   >"$dir/dav.log" 2>&1 &
-nohup rclone serve webdav "$dir/davs" --addr 127.0.0.1:8443 "${auth[@]}" \
+nohup "$rclone" serve webdav "$dir/davs" --addr 127.0.0.1:8443 "${auth[@]}" \
   --cert "$dir/cert.pem" --key "$dir/key.pem" >"$dir/davs.log" 2>&1 &
 
 for port in 2222 2121 2990 8080 8443; do
