@@ -198,6 +198,18 @@ class BackupTransportServerTest {
         )
     }
 
+    @Test
+    fun ftpsRefusesServersThatDoNotEncryptFileTransfers() {
+        // rclone's server encrypts the commands with implicit TLS, but not the file transfers
+        val settings = settings(Protocol.FTPS_IMPLICIT, "FTPS_PLAIN_DATA_PORT")
+        try {
+            BackupTransport.create(settings).use { it.connect() }
+            fail("A server that does not encrypt file transfers was used")
+        } catch (e: IOException) {
+            assertTrue(e.toString(), e.message.orEmpty().contains("encrypt file transfers"))
+        }
+    }
+
     /** Connecting must fail because of the self-signed certificate, not for another reason. */
     private fun assertCertificateRefused(settings: ServerSettings) {
         try {
