@@ -3,8 +3,8 @@
 <h2 align="center"><b>PipePipe</b></h2>
 <h4 align="center">
 NewPipe, reimagined: faster, more stable, and packed with more features.</h4>
-<p align="center"><a href="https://f-droid.org/packages/InfinityLoop1309.NewPipeEnhanced/"><img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png" alt="Get it on F-Droid"  width="207" /></a>
-<a href="https://apt.izzysoft.de/fdroid/index/apk/InfinityLoop1309.NewPipeEnhanced"><img src="assets/IzzyOnDroid.png" alt="Get it on IzzyOnDroid" width="207" /></a></p>
+<p align="center"><b><a href="https://github.com/motoemoto47ark123/PipePipe/releases/latest">Download the latest release</a></b></p>
+<p align="center">An independent build based on <a href="https://github.com/InfinityLoop1308/PipePipe">PipePipe</a> by InfinityLoop1308. Installed builds are notified about new releases of this repository.</p>
 <hr>
 
 ## Beyond NewPipe

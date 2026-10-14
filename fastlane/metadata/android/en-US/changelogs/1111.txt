@@ -1,0 +1,12 @@
+First release of this independent build, based on PipePipe 5.5.0-beta1.
+
+### Bug Fixes
+
+- Fixed YouTube streams failing with HTTP 403 errors: streams whose signature or throttling parameter cannot be decoded are now left out instead of being played
+- Fixed music videos losing all their streams when a single signature could not be decoded
+- Fixed SABR and live (HLS) playback being attempted with an undecoded throttling parameter
+- The on-device decoder now keeps the values it could decode and asks the decoder API only for the rest
+
+### Other Changes
+
+- Update checks now use the releases of this repository
