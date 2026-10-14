@@ -4,6 +4,7 @@ import org.apache.commons.net.ftp.FTP
 import org.apache.commons.net.ftp.FTPClient
 import org.apache.commons.net.ftp.FTPReply
 import org.apache.commons.net.ftp.FTPSClient
+import org.apache.commons.net.ftp.FTPSSocketFactory
 import org.apache.commons.net.util.TrustManagerUtils
 import java.io.File
 import java.io.FileInputStream
@@ -11,10 +12,13 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.security.GeneralSecurityException
 import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLException
 
 /** Uploads backups over FTP, or FTP with explicit or implicit TLS (FTPS). */
 class FtpTransport(private val settings: ServerSettings) : BackupTransport {
     private var client: FTPClient? = null
+    private var sslContext: SSLContext? = null
 
     override fun connect() {
         val ftp = createClient()
@@ -28,9 +32,7 @@ class FtpTransport(private val settings: ServerSettings) : BackupTransport {
                 throw IOException("The server refused the connection: ${reply(ftp)}")
             }
             if (ftp is FTPSClient) {
-                // Encrypt file transfers as well, not only the commands
-                ftp.execPBSZ(0)
-                ftp.execPROT("P")
+                protectFileTransfers(ftp)
             }
             val username = settings.username.ifEmpty { "anonymous" }
             if (!ftp.login(username, settings.password)) {
@@ -54,20 +56,43 @@ class FtpTransport(private val settings: ServerSettings) : BackupTransport {
         if (settings.protocol == Protocol.FTP) {
             return FTPClient()
         }
-        val ftps = FTPSClient(settings.protocol == Protocol.FTPS_IMPLICIT)
-        if (settings.allowUntrustedCertificates) {
-            ftps.trustManager = TrustManagerUtils.getAcceptAllTrustManager()
+        // The default trust manager of FTPSClient only checks the validity dates
+        val trustManager = if (settings.allowUntrustedCertificates) {
+            TrustManagerUtils.getAcceptAllTrustManager()
         } else {
-            // The default trust manager of FTPSClient only checks the validity dates
             try {
-                ftps.trustManager = TrustManagerUtils.getDefaultTrustManager(null)
+                TrustManagerUtils.getDefaultTrustManager(null)
             } catch (e: GeneralSecurityException) {
                 throw IOException("Could not load the trusted certificates", e)
             }
+        }
+        val context = try {
+            SSLContext.getInstance("TLS").apply { init(null, arrayOf(trustManager), null) }
+        } catch (e: GeneralSecurityException) {
+            throw IOException("Could not set up TLS", e)
+        }
+        sslContext = context
+        val ftps = FTPSClient(settings.protocol == Protocol.FTPS_IMPLICIT, context)
+        if (!settings.allowUntrustedCertificates) {
             ftps.setHostnameVerifier(HttpsURLConnection.getDefaultHostnameVerifier())
             ftps.setEndpointCheckingEnabled(true)
         }
         return ftps
+    }
+
+    /** Encrypts file transfers as well, not only the commands. */
+    private fun protectFileTransfers(ftps: FTPSClient) {
+        try {
+            ftps.execPBSZ(0)
+            ftps.execPROT("P")
+        } catch (e: SSLException) {
+            // Some servers with implicit TLS refuse these commands but always encrypt transfers
+            if (settings.protocol != Protocol.FTPS_IMPLICIT) {
+                // Not an SSLException: the problem is not the certificate
+                throw IOException("The server refused to encrypt file transfers: ${e.message}")
+            }
+            ftps.setSocketFactory(FTPSSocketFactory(sslContext))
+        }
     }
 
     private fun openFolder(ftp: FTPClient) {
