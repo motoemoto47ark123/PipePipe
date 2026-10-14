@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The password for backups to the user's server must not end up in the Google backup -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="remote_backup.xml" />
+</full-backup-content>

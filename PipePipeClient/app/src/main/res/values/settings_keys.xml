@@ -1822,4 +1822,47 @@
     <string name="dearrow_auto_format_key" translatable="false">dearrow_auto_format</string>
     <string name="dearrow_clear_cache_key" translatable="false">dearrow_clear_cache</string>
     <string name="dearrow_original_fallback_key" translatable="false">dearrow_original_fallback</string>
+
+    <!-- Data location and backups to the user's server -->
+    <string name="database_location_key" translatable="false">database_location</string>
+    <string name="remote_backup_screen_key" translatable="false">remote_backup_screen</string>
+    <string name="remote_backup_enabled_key" translatable="false">remote_backup_enabled</string>
+    <string name="remote_backup_status_key" translatable="false">remote_backup_status</string>
+    <string name="remote_backup_protocol_key" translatable="false">remote_backup_protocol</string>
+    <string name="remote_backup_host_key" translatable="false">remote_backup_host</string>
+    <string name="remote_backup_port_key" translatable="false">remote_backup_port</string>
+    <string name="remote_backup_username_key" translatable="false">remote_backup_username</string>
+    <string name="remote_backup_password_key" translatable="false">remote_backup_password</string>
+    <string name="remote_backup_private_key_key" translatable="false">remote_backup_private_key</string>
+    <string name="remote_backup_key_passphrase_key" translatable="false">remote_backup_key_passphrase</string>
+    <string name="remote_backup_server_key_key" translatable="false">remote_backup_server_key</string>
+    <string name="remote_backup_allow_untrusted_key" translatable="false">remote_backup_allow_untrusted</string>
+    <string name="remote_backup_folder_key" translatable="false">remote_backup_folder</string>
+    <string name="remote_backup_test_key" translatable="false">remote_backup_test</string>
+    <string name="remote_backup_interval_key" translatable="false">remote_backup_interval</string>
+    <string name="remote_backup_wifi_only_key" translatable="false">remote_backup_wifi_only</string>
+    <string name="remote_backup_include_settings_key" translatable="false">remote_backup_include_settings</string>
+    <string name="remote_backup_keep_recent_key" translatable="false">remote_backup_keep_recent</string>
+    <string name="remote_backup_keep_daily_key" translatable="false">remote_backup_keep_daily</string>
+    <string name="remote_backup_now_key" translatable="false">remote_backup_now</string>
+    <string name="remote_backup_restore_key" translatable="false">remote_backup_restore</string>
+    <string name="remote_backup_notification_channel_id" translatable="false">remote_backup</string>
+    <string-array name="remote_backup_protocol_values" translatable="false">
+        <item>SFTP</item>
+        <item>FTPS</item>
+        <item>FTP</item>
+        <item>WEBDAV_HTTPS</item>
+        <item>WEBDAV_HTTP</item>
+    </string-array>
+    <string-array name="remote_backup_interval_values" translatable="false">
+        <item>1</item>
+        <item>3</item>
+        <item>6</item>
+        <item>12</item>
+        <item>24</item>
+    </string-array>
+
+    <!-- Feed filters -->
+    <string name="feed_show_paid_items_key" translatable="false">feed_show_paid_items</string>
+    <string name="feed_show_live_items_key" translatable="false">feed_show_live_items</string>
 </resources>

@@ -42,16 +42,23 @@ class FeedDatabaseManager(context: Context) {
 
     fun getStreams(
         groupId: Long = FeedGroupEntity.GROUP_ALL_ID,
-        getPlayedStreams: Boolean = true
+        getPlayedStreams: Boolean = true,
+        getPaidStreams: Boolean = true,
+        getLiveStreams: Boolean = true
     ): Maybe<List<StreamWithState>> {
         return when (groupId) {
             FeedGroupEntity.GROUP_ALL_ID -> {
-                if (getPlayedStreams) feedTable.getAllStreams()
-                else feedTable.getLiveOrNotPlayedStreams()
+                if (getPlayedStreams) feedTable.getAllStreams(getPaidStreams, getLiveStreams)
+                else feedTable.getLiveOrNotPlayedStreams(getPaidStreams, getLiveStreams)
             }
             else -> {
-                if (getPlayedStreams) feedTable.getAllStreamsForGroup(groupId)
-                else feedTable.getLiveOrNotPlayedStreamsForGroup(groupId)
+                if (getPlayedStreams) {
+                    feedTable.getAllStreamsForGroup(groupId, getPaidStreams, getLiveStreams)
+                } else {
+                    feedTable.getLiveOrNotPlayedStreamsForGroup(
+                        groupId, getPaidStreams, getLiveStreams
+                    )
+                }
             }
         }
     }

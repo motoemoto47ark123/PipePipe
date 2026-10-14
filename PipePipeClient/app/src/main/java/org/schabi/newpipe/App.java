@@ -7,6 +7,7 @@ import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.car.app.connection.CarConnection;
@@ -20,6 +21,8 @@ import com.jakewharton.processphoenix.ProcessPhoenix;
 
 import org.acra.ACRA;
 import org.acra.config.CoreConfigurationBuilder;
+import org.schabi.newpipe.backup.RemoteBackupScheduler;
+import org.schabi.newpipe.database.DatabaseLocation;
 import org.schabi.newpipe.error.ReCaptchaActivity;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.downloader.Downloader;
@@ -30,6 +33,7 @@ import org.schabi.newpipe.util.*;
 import org.schabi.newpipe.util.dearrow.DeArrowImages;
 import org.schabi.newpipe.youtube.LocalDomPoTokenProvider;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.SocketException;
@@ -140,6 +144,8 @@ public class App extends MultiDexApplication {
 
         StateSaver.init(this);
         initNotificationChannels();
+        warnIfDatabaseFolderIsInaccessible();
+        RemoteBackupScheduler.initialize(this);
 
         ServiceHelper.initServices(this);
         LocalDomPoTokenProvider.initialize(this);
@@ -398,8 +404,28 @@ public class App extends MultiDexApplication {
                 .setShowBadge(false)
                 .build());
 
+        notificationChannelCompats.add(new NotificationChannelCompat
+                .Builder(getString(R.string.remote_backup_notification_channel_id),
+                        NotificationManagerCompat.IMPORTANCE_LOW)
+                .setName(getString(R.string.remote_backup_notification_channel_name))
+                .setDescription(getString(
+                        R.string.remote_backup_notification_channel_description))
+                .build());
+
         final NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
         notificationManager.createNotificationChannelsCompat(notificationChannelCompats);
+    }
+
+    /**
+     * Tells the user when the folder chosen for the database cannot be accessed, for example
+     * because storage access was revoked, since an empty database is used until it is fixed.
+     */
+    private void warnIfDatabaseFolderIsInaccessible() {
+        final String folder = DatabaseLocation.getFolder(this);
+        if (folder != null && !DatabaseLocation.isWritableFolder(new File(folder))) {
+            Toast.makeText(this, getString(R.string.database_location_inaccessible_toast, folder),
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     protected boolean isDisposedRxExceptionsReported() {

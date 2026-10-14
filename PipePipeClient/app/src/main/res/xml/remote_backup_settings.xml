@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:title="@string/remote_backup_title">
+
+    <SwitchPreferenceCompat
+        android:defaultValue="false"
+        android:key="@string/remote_backup_enabled_key"
+        android:summary="@string/remote_backup_enabled_summary"
+        android:title="@string/remote_backup_enabled_title"
+        app:singleLineTitle="false"
+        app:iconSpaceReserved="false" />
+
+    <Preference
+        android:key="@string/remote_backup_status_key"
+        android:title="@string/remote_backup_status_title"
+        android:selectable="false"
+        app:singleLineTitle="false"
+        app:iconSpaceReserved="false" />
+
+    <PreferenceCategory
+        android:layout="@layout/settings_category_header_layout"
+        android:title="@string/remote_backup_server_category"
+        app:iconSpaceReserved="false">
+
+        <ListPreference
+            android:defaultValue="SFTP"
+            android:entries="@array/remote_backup_protocol_names"
+            android:entryValues="@array/remote_backup_protocol_values"
+            android:key="@string/remote_backup_protocol_key"
+            android:title="@string/remote_backup_protocol_title"
+            app:useSimpleSummaryProvider="true"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:key="@string/remote_backup_host_key"
+            android:title="@string/remote_backup_host_title"
+            android:dialogMessage="@string/remote_backup_host_message"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:key="@string/remote_backup_port_key"
+            android:title="@string/remote_backup_port_title"
+            android:dialogMessage="@string/remote_backup_port_message"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:key="@string/remote_backup_username_key"
+            android:title="@string/remote_backup_username_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:key="@string/remote_backup_password_key"
+            android:title="@string/remote_backup_password_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:key="@string/remote_backup_private_key_key"
+            android:title="@string/remote_backup_private_key_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:key="@string/remote_backup_key_passphrase_key"
+            android:title="@string/remote_backup_key_passphrase_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:key="@string/remote_backup_server_key_key"
+            android:title="@string/remote_backup_server_key_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="@string/remote_backup_allow_untrusted_key"
+            android:summary="@string/remote_backup_allow_untrusted_summary"
+            android:title="@string/remote_backup_allow_untrusted_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:defaultValue="PipePipe"
+            android:key="@string/remote_backup_folder_key"
+            android:title="@string/remote_backup_folder_title"
+            android:dialogMessage="@string/remote_backup_folder_message"
+            app:useSimpleSummaryProvider="true"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:key="@string/remote_backup_test_key"
+            android:summary="@string/remote_backup_test_summary"
+            android:title="@string/remote_backup_test_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:layout="@layout/settings_category_header_layout"
+        android:title="@string/remote_backup_schedule_category"
+        app:iconSpaceReserved="false">
+
+        <ListPreference
+            android:defaultValue="1"
+            android:entries="@array/remote_backup_interval_names"
+            android:entryValues="@array/remote_backup_interval_values"
+            android:key="@string/remote_backup_interval_key"
+            android:title="@string/remote_backup_interval_title"
+            app:useSimpleSummaryProvider="true"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="@string/remote_backup_wifi_only_key"
+            android:summary="@string/remote_backup_wifi_only_summary"
+            android:title="@string/remote_backup_wifi_only_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="@string/remote_backup_include_settings_key"
+            android:summary="@string/remote_backup_include_settings_summary"
+            android:title="@string/remote_backup_include_settings_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:defaultValue="24"
+            android:key="@string/remote_backup_keep_recent_key"
+            android:title="@string/remote_backup_keep_recent_title"
+            android:dialogMessage="@string/remote_backup_keep_recent_message"
+            app:useSimpleSummaryProvider="true"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:defaultValue="30"
+            android:key="@string/remote_backup_keep_daily_key"
+            android:title="@string/remote_backup_keep_daily_title"
+            android:dialogMessage="@string/remote_backup_keep_daily_message"
+            app:useSimpleSummaryProvider="true"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:layout="@layout/settings_category_header_layout"
+        android:title="@string/remote_backup_actions_category"
+        app:iconSpaceReserved="false">
+
+        <Preference
+            android:key="@string/remote_backup_now_key"
+            android:summary="@string/remote_backup_now_summary"
+            android:title="@string/remote_backup_now_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:key="@string/remote_backup_restore_key"
+            android:summary="@string/remote_backup_restore_summary"
+            android:title="@string/remote_backup_restore_title"
+            app:singleLineTitle="false"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+</PreferenceScreen>

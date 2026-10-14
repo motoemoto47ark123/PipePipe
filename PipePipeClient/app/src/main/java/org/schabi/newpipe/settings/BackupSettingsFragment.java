@@ -18,6 +18,7 @@ import androidx.preference.Preference;
 import androidx.preference.PreferenceManager;
 import org.schabi.newpipe.NewPipeDatabase;
 import org.schabi.newpipe.R;
+import org.schabi.newpipe.backup.RemoteBackupStatus;
 import org.schabi.newpipe.error.ErrorUtil;
 import org.schabi.newpipe.extractor.NewPipe;
 import org.schabi.newpipe.extractor.ServiceList;
@@ -63,6 +64,8 @@ public class BackupSettingsFragment extends BasePreferenceFragment {
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), this::requestImportPathResult);
     private final ActivityResultLauncher<Intent> requestExportPathLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), this::requestExportPathResult);
+    private final DatabaseLocationController databaseLocationController =
+            new DatabaseLocationController(this);
 
     @Override
     public void onAttach(@NonNull final Context context) {
@@ -75,12 +78,21 @@ public class BackupSettingsFragment extends BasePreferenceFragment {
     public void onCreatePreferences(final Bundle savedInstanceState, final String rootKey) {
         final File homeDir = ContextCompat.getDataDir(requireContext());
         Objects.requireNonNull(homeDir);
-        manager = new ContentSettingsManager(new NewPipeFileLocator(homeDir));
+        manager = new ContentSettingsManager(new NewPipeFileLocator(homeDir,
+                NewPipeDatabase.getDatabaseFile(requireContext())));
         manager.deleteSettingsFile();
 
         importExportDataPathKey = getString(R.string.import_export_data_path);
 
         addPreferencesFromResourceRegistry();
+
+        final Preference databaseLocationPreference =
+                requirePreference(R.string.database_location_key);
+        databaseLocationPreference.setSummary(databaseLocationController.getSummary());
+        databaseLocationPreference.setOnPreferenceClickListener((Preference p) -> {
+            databaseLocationController.showDialog();
+            return true;
+        });
 
         final Preference importDataPreference = requirePreference(R.string.import_data);
         importDataPreference.setOnPreferenceClickListener((Preference p) -> {
@@ -164,8 +176,16 @@ public class BackupSettingsFragment extends BasePreferenceFragment {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        requirePreference(R.string.remote_backup_screen_key)
+                .setSummary(RemoteBackupStatus.summary(requireContext()));
+    }
+
+    @Override
     public void onDestroy() {
         disposables.clear();
+        databaseLocationController.dispose();
         super.onDestroy();
     }
 

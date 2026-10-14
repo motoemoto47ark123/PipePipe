@@ -35,11 +35,14 @@ abstract class FeedDAO {
         INNER JOIN feed f
         ON s.uid = f.stream_id
 
+        WHERE (:showPaid OR s.is_paid = 0)
+        AND (:showLive OR s.stream_type NOT IN ('LIVE_STREAM', 'AUDIO_LIVE_STREAM'))
+
         ORDER BY s.upload_date IS NULL DESC, s.upload_date DESC, s.uploader ASC
         LIMIT 500
         """
     )
-    abstract fun getAllStreams(): Maybe<List<StreamWithState>>
+    abstract fun getAllStreams(showPaid: Boolean, showLive: Boolean): Maybe<List<StreamWithState>>
 
     @Query(
         """
@@ -59,16 +62,24 @@ abstract class FeedDAO {
         ON fgs.subscription_id = f.subscription_id
 
         WHERE fgs.group_id = :groupId
+        AND (:showPaid OR s.is_paid = 0)
+        AND (:showLive OR s.stream_type NOT IN ('LIVE_STREAM', 'AUDIO_LIVE_STREAM'))
 
         ORDER BY s.upload_date IS NULL DESC, s.upload_date DESC, s.uploader ASC
         LIMIT 500
         """
     )
-    abstract fun getAllStreamsForGroup(groupId: Long): Maybe<List<StreamWithState>>
+    abstract fun getAllStreamsForGroup(
+        groupId: Long,
+        showPaid: Boolean,
+        showLive: Boolean
+    ): Maybe<List<StreamWithState>>
 
     /**
      * @see StreamStateEntity.isFinished()
      * @see StreamStateEntity.PLAYBACK_FINISHED_END_MILLISECONDS
+     * @param showPaid whether to include paid (members-only) streams
+     * @param showLive whether to include live streams
      * @return all of the non-live, never-played and non-finished streams in the feed
      *         (all of the cited conditions must hold for a stream to be in the returned list)
      */
@@ -94,17 +105,24 @@ abstract class FeedDAO {
             OR s.stream_type = 'LIVE_STREAM'
             OR s.stream_type = 'AUDIO_LIVE_STREAM'
         )
+        AND (:showPaid OR s.is_paid = 0)
+        AND (:showLive OR s.stream_type NOT IN ('LIVE_STREAM', 'AUDIO_LIVE_STREAM'))
 
         ORDER BY s.upload_date IS NULL DESC, s.upload_date DESC, s.uploader ASC
         LIMIT 500
         """
     )
-    abstract fun getLiveOrNotPlayedStreams(): Maybe<List<StreamWithState>>
+    abstract fun getLiveOrNotPlayedStreams(
+        showPaid: Boolean,
+        showLive: Boolean
+    ): Maybe<List<StreamWithState>>
 
     /**
      * @see StreamStateEntity.isFinished()
      * @see StreamStateEntity.PLAYBACK_FINISHED_END_MILLISECONDS
      * @param groupId the group id to get streams of
+     * @param showPaid whether to include paid (members-only) streams
+     * @param showLive whether to include live streams
      * @return all of the non-live, never-played and non-finished streams for the given feed group
      *         (all of the cited conditions must hold for a stream to be in the returned list)
      */
@@ -134,12 +152,18 @@ abstract class FeedDAO {
             OR s.stream_type = 'LIVE_STREAM'
             OR s.stream_type = 'AUDIO_LIVE_STREAM'
         )
+        AND (:showPaid OR s.is_paid = 0)
+        AND (:showLive OR s.stream_type NOT IN ('LIVE_STREAM', 'AUDIO_LIVE_STREAM'))
 
         ORDER BY s.upload_date IS NULL DESC, s.upload_date DESC, s.uploader ASC
         LIMIT 500
         """
     )
-    abstract fun getLiveOrNotPlayedStreamsForGroup(groupId: Long): Maybe<List<StreamWithState>>
+    abstract fun getLiveOrNotPlayedStreamsForGroup(
+        groupId: Long,
+        showPaid: Boolean,
+        showLive: Boolean
+    ): Maybe<List<StreamWithState>>
 
     @Query(
         """

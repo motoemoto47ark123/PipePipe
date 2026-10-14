@@ -1,0 +1,113 @@
+name: App tests
+
+# Tests of the app: unit tests, including backups to real SFTP, FTP, FTPS and WebDAV servers, an
+# optimized release build, and tests on Android emulators for the data location, backups from the
+# phone and the feed filters.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'PipePipeClient/**'
+      - '.github/workflows/app-tests.yml'
+      - '.github/scripts/start-backup-test-servers.sh'
+  push:
+    branches:
+      - main
+    paths:
+      - 'PipePipeClient/**'
+      - '.github/workflows/app-tests.yml'
+      - '.github/scripts/start-backup-test-servers.sh'
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: 25
+          distribution: "temurin"
+          cache: 'gradle'
+
+      - name: Start backup test servers
+        run: .github/scripts/start-backup-test-servers.sh
+
+      - name: Run unit tests
+        working-directory: PipePipeClient
+        run: ./gradlew :app:testDebugUnitTest --stacktrace -DskipFormatKtlint
+
+      # R8 removes code it considers unused; this catches missing keep rules
+      - name: Build optimized release APKs
+        working-directory: PipePipeClient
+        run: ./gradlew :app:assembleRelease --stacktrace -DskipFormatKtlint
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: |
+            PipePipeClient/app/build/reports/tests
+            PipePipeClient/app/build/outputs/mapping/release/missing_rules.txt
+          if-no-files-found: ignore
+
+  emulator-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        # 29 uses the storage permission of Android 10, 34 the "all files access" of Android 11+
+        api-level: [29, 34]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: 25
+          distribution: "temurin"
+          cache: 'gradle'
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Start backup test servers
+        run: .github/scripts/start-backup-test-servers.sh
+
+      - name: Build the app and the tests
+        working-directory: PipePipeClient
+        run: ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace -DskipFormatKtlint
+
+      - name: Run tests on the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          working-directory: PipePipeClient
+          script: ./gradlew :app:connectedDebugAndroidTest --stacktrace -DskipFormatKtlint -Pandroid.testInstrumentationRunnerArguments.class=org.schabi.newpipe.database.DatabaseLocationTest,org.schabi.newpipe.backup.RemoteBackupTest,org.schabi.newpipe.local.feed.FeedFilterQueryTest -Pandroid.testInstrumentationRunnerArguments.backupHost=10.0.2.2 -Pandroid.testInstrumentationRunnerArguments.serverUser=$PIPEPIPE_TEST_SERVER_USER -Pandroid.testInstrumentationRunnerArguments.serverPassword=$PIPEPIPE_TEST_SERVER_PASSWORD -Pandroid.testInstrumentationRunnerArguments.sftpPort=$PIPEPIPE_TEST_SFTP_PORT -Pandroid.testInstrumentationRunnerArguments.webdavPort=$PIPEPIPE_TEST_WEBDAV_PORT -Pandroid.testInstrumentationRunnerArguments.sftpKeyEd25519Base64=$PIPEPIPE_TEST_SFTP_KEY_ED25519_BASE64
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: emulator-test-reports-api-${{ matrix.api-level }}
+          path: |
+            PipePipeClient/app/build/reports/androidTests
+            PipePipeClient/app/build/outputs/androidTest-results
+          if-no-files-found: ignore

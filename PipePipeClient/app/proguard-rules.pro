@@ -51,3 +51,14 @@
 -dontwarn androidx.room.paging.**
 
 -keep class org.json.JSONException { *; }
+
+# Backups to the user's server: JSch loads its algorithm implementations by class name and
+# picks the Bouncy Castle based ones on Android
+-keep class com.jcraft.jsch.** { *; }
+-dontwarn com.jcraft.jsch.**
+-dontwarn org.apache.logging.log4j.**
+-dontwarn org.slf4j.**
+-dontwarn com.sun.jna.**
+-dontwarn org.newsclub.net.unix.**
+-dontwarn org.ietf.jgss.**
+-dontwarn org.bouncycastle.**

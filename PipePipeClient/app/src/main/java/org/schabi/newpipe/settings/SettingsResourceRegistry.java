@@ -43,6 +43,7 @@ public final class SettingsResourceRegistry {
         add(GestureSettingsFragment.class, R.xml.gesture_settings);
         add(AdvancedSettingsFragment.class, R.xml.advanced_settings);
         add(BackupSettingsFragment.class, R.xml.backup_settings);
+        add(RemoteBackupSettingsFragment.class, R.xml.remote_backup_settings);
         add(BulletCommentsSettingsFragment.class, R.xml.bullet_comments_settings);
         add(ExoPlayerSettingsFragment.class, R.xml.exoplayer_settings);
         add(SponsorBlockSettingsFragment.class, R.xml.sponsor_block_settings);

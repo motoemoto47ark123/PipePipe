@@ -1,0 +1,5 @@
+### New
+
+- Choose where your data is stored: Settings → Backup → Where your data is stored. Keep it in a folder on your phone's storage so it survives uninstalling or reinstalling the app. If the folder already has PipePipe data, for example after a reinstall, you can use it right away
+- Automatic backups to your own server over SFTP, FTPS, FTP or WebDAV: Settings → Backup → Automatic backups to your server. Backs up every hour by default, in the background and while you use the app, keeps recent and daily backups, and can restore a backup from the server
+- Feed filters for paid videos and live streams, next to the existing filter for watched videos

@@ -91,7 +91,7 @@ public class HistoryRecordManager {
      * hidden. Adds a history entry and updates the stream progress to 100%.
      *
      * @see FeedDAO#getLiveOrNotPlayedStreams
-     * @see FeedViewModel#togglePlayedItems
+     * @see FeedViewModel#setFilters
      * @param info the item to mark as watched
      * @return a Maybe containing the ID of the item if successful
      */

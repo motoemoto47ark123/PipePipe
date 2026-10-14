@@ -105,7 +105,7 @@ class FeedFragment : BaseStateFragment<FeedState>() {
     private var oldestSubscriptionUpdate: OffsetDateTime? = null
 
     private lateinit var groupAdapter: GroupieAdapter
-    @JvmField var showPlayedItems: Boolean = true
+    private var feedFilters = FeedViewModel.FeedFilters()
 
     private var onSettingsChangeListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
     private var updateListViewModeOnResume = false
@@ -201,7 +201,7 @@ class FeedFragment : BaseStateFragment<FeedState>() {
 
         val factory = FeedViewModel.Factory(requireContext(), groupId)
         viewModel = ViewModelProvider(this, factory).get(FeedViewModel::class.java)
-        showPlayedItems = viewModel.getShowPlayedItemsFromPreferences()
+        feedFilters = viewModel.getFiltersFromPreferences()
         viewModel.stateLiveData.observe(viewLifecycleOwner) { it?.let(::handleResult) }
 
         groupAdapter = GroupieAdapter().apply {
@@ -388,17 +388,26 @@ class FeedFragment : BaseStateFragment<FeedState>() {
 //        activity.supportActionBar?.subtitle = groupName
 
         inflater.inflate(R.menu.menu_feed_fragment, menu)
-        updateTogglePlayedItemsButton(menu.findItem(R.id.menu_item_feed_toggle_played_items))
+        updateFilterButtons(menu)
         menu.findItem(R.id.action_search_feed)?.isVisible =
             menu.isItemVisible(R.id.action_search).not()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == R.id.menu_item_feed_toggle_played_items) {
-            showPlayedItems = !item.isChecked
-            updateTogglePlayedItemsButton(item)
-            viewModel.togglePlayedItems(showPlayedItems)
-            viewModel.saveShowPlayedItemsToPreferences(showPlayedItems)
+        val newFilters = when (item.itemId) {
+            R.id.menu_item_feed_toggle_played_items ->
+                feedFilters.copy(showPlayedItems = !item.isChecked)
+            R.id.menu_item_feed_toggle_paid_items ->
+                feedFilters.copy(showPaidItems = !item.isChecked)
+            R.id.menu_item_feed_toggle_live_items ->
+                feedFilters.copy(showLiveItems = !item.isChecked)
+            else -> null
+        }
+        if (newFilters != null) {
+            feedFilters = newFilters
+            updateFilterButton(item, !item.isChecked)
+            viewModel.setFilters(newFilters)
+            viewModel.saveFiltersToPreferences(newFilters)
         } else if (item.itemId == R.id.menu_item_feed_channel_list) {
             openFeedChannelsFragment(fm, groupId, groupName)
         } else if (item.itemId == R.id.action_search_feed) {
@@ -456,20 +465,35 @@ class FeedFragment : BaseStateFragment<FeedState>() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         listState?.let { outState.putParcelable("listState", it) }
-        outState.putBoolean("showPlayedItems", showPlayedItems)
+        outState.putBoolean("showPlayedItems", feedFilters.showPlayedItems)
+        outState.putBoolean("showPaidItems", feedFilters.showPaidItems)
+        outState.putBoolean("showLiveItems", feedFilters.showLiveItems)
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         listState = savedInstanceState.getParcelable("listState")
-        showPlayedItems = savedInstanceState.getBoolean("showPlayedItems", true)
+        feedFilters = FeedViewModel.FeedFilters(
+            showPlayedItems = savedInstanceState.getBoolean("showPlayedItems", true),
+            showPaidItems = savedInstanceState.getBoolean("showPaidItems", true),
+            showLiveItems = savedInstanceState.getBoolean("showLiveItems", true)
+        )
     }
 
-    private fun updateTogglePlayedItemsButton(menuItem: MenuItem) {
-        menuItem.isChecked = showPlayedItems
+    private fun updateFilterButtons(menu: Menu) {
+        menu.findItem(R.id.menu_item_feed_toggle_played_items)
+            ?.let { updateFilterButton(it, feedFilters.showPlayedItems) }
+        menu.findItem(R.id.menu_item_feed_toggle_paid_items)
+            ?.let { updateFilterButton(it, feedFilters.showPaidItems) }
+        menu.findItem(R.id.menu_item_feed_toggle_live_items)
+            ?.let { updateFilterButton(it, feedFilters.showLiveItems) }
+    }
+
+    private fun updateFilterButton(menuItem: MenuItem, shown: Boolean) {
+        menuItem.isChecked = shown
         menuItem.icon = AppCompatResources.getDrawable(
             requireContext(),
-            if (showPlayedItems) R.drawable.ic_visibility_on else R.drawable.ic_visibility_off
+            if (shown) R.drawable.ic_visibility_on else R.drawable.ic_visibility_off
         )
     }
 

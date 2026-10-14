@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -73,8 +74,21 @@ public final class ZipHelper {
      */
     public static boolean extractFileFromZip(final StoredFileHelper zipFile, final String file,
                                              final String name) throws Exception {
-        try (ZipInputStream inZip = new ZipInputStream(new BufferedInputStream(
-                new SharpInputStream(zipFile.getStream())))) {
+        return extractFileFromZip(new SharpInputStream(zipFile.getStream()), file, name);
+    }
+
+    /**
+     * Same as {@link #extractFileFromZip(StoredFileHelper, String, String)} for a zip file that is
+     * accessible with {@code java.io}.
+     */
+    public static boolean extractFileFromZip(final File zipFile, final String file,
+                                             final String name) throws Exception {
+        return extractFileFromZip(new FileInputStream(zipFile), file, name);
+    }
+
+    private static boolean extractFileFromZip(final InputStream zipStream, final String file,
+                                              final String name) throws Exception {
+        try (ZipInputStream inZip = new ZipInputStream(new BufferedInputStream(zipStream))) {
             final byte[] data = new byte[BUFFER_SIZE];
             boolean found = false;
             ZipEntry ze;
@@ -105,8 +119,23 @@ public final class ZipHelper {
     }
 
     public static boolean isValidZipFile(final StoredFileHelper file) {
-        try (ZipInputStream inZip = new ZipInputStream(new BufferedInputStream(
-                new SharpInputStream(file.getStream())))) {
+        try {
+            return isValidZipFile(new SharpInputStream(file.getStream()));
+        } catch (final IOException ioe) {
+            return false;
+        }
+    }
+
+    public static boolean isValidZipFile(final File file) {
+        try {
+            return isValidZipFile(new FileInputStream(file));
+        } catch (final IOException ioe) {
+            return false;
+        }
+    }
+
+    private static boolean isValidZipFile(final InputStream stream) {
+        try (ZipInputStream inZip = new ZipInputStream(new BufferedInputStream(stream))) {
             // constructing the stream accepts any content, the first entry must be read
             return inZip.getNextEntry() != null;
         } catch (final IOException ioe) {
